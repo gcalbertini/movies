@@ -62,7 +62,7 @@ for movie in populars: sample_means_populars.append(np.mean(movie))
 for movie in sleepers: sample_means_sleepers.append(np.mean(movie))
 variances1 = [st.variance(sample_means_populars), st.variance(sample_means_sleepers)]
 
-n_bins = 11
+n_bins = 13
 fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 axs[0].set_title("sample_means_populars")
 axs[1].set_title("sample_means_sleepers")
@@ -72,14 +72,13 @@ axs[0].set_xlabel('Avg Rating')
 axs[1].set_xlabel('Avg Rating')
 axs[0].hist(sample_means_populars, bins=n_bins)
 axs[1].hist(sample_means_sleepers, bins=n_bins)
+med1 = np.median(sample_means_populars)
+med2 = np.median(sample_means_sleepers)
 plt.show()
 
-#Two sample t-test is relatively robust to the assumption of normality and homogeneity of variances when sample size 
-#is large (n ≥ 30) and there are equal number of samples (n1 = n2) in both groups as we have here (200). Variances
-#are not equal here.
+#TO-DO: ASSUMPTIONS, these have about the same dist so ok
 
-pval_q1 = stats.ttest_ind(sample_means_populars, sample_means_sleepers, equal_var=False, nan_policy='raise', \
-    permutations=None, random_state=None, alternative='greater', trim=0)
+pval_q1 = stats.mannwhitneyu(sample_means_populars, sample_means_sleepers, alternative='greater', method='auto')
 print(pval_q1)
 
 #As pval << 0.05 we reject the null hypothesis. There is sufficient evidence to suggest that movies that are more
@@ -131,12 +130,10 @@ axs[0].hist(older, bins=n_bins)
 axs[1].hist(newer, bins=n_bins)
 plt.show()
 
-#Two sample t-test is relatively robust to the assumption of normality and homogeneity of variances when sample size 
-#is large (n ≥ 30) but since there may be unequal year counts in both groups (+5% diff observed wrt 400), 
-# permutation tests are done. Variances not assumed equal here due to this fact (Welch t-test).
+#TO DO: ASSUMPTIONS 
 variances2 = [st.variance(newer), st.variance(older)]
-pval_q2 = stats.ttest_ind(newer, older, equal_var=True, nan_policy='raise', \
-    permutations=10000, random_state=123, alternative='two-sided', trim=0)
+
+pval_q2 = stats.mannwhitneyu(newer, older, alternative='greater', method='auto')
 print(pval_q2)       
 
 #As pval > 0.05 we fail to reject the null hypothesis. There is insufficient evidence to suggest that movies 
@@ -288,9 +285,59 @@ print(prop_diff)
 # About ~8% of movies show an "only child effect" with an alpha 0.05
 
 # Do people who like to watch movies socially enjoy ‘The Wolf of Wall Street (2013)’ more than those who  prefer to watch them alone? 
+idx_social = input.columns.get_loc('Movies are best enjoyed alone (1: Yes; 0: No; -1: Did not respond)')
+idx_ratings_WW = input.columns.get_loc('The Wolf of Wall Street (2013)')
+WW_alone = [] 
+WW_ppl = []
+group_status = np.array(data[idx_social])
+ratings_WW = np.array(data[idx_ratings_WW])
+count = 0
+for i in range(len(group_status)):
+    if np.isnan(group_status[i]) or np.isnan(ratings_WW[i]): continue
+    if group_status[i] == 1:
+        WW_alone.append(ratings_WW[i])
+        count+=1
+    elif child_status[i] == 0:
+        WW_ppl.append(ratings_WW[i])
+        count+=1
+
+if count!=len(WW_alone)+len(WW_ppl):error('POSSIBLE DATA MISMATCH')
+pval_q7 = stats.ttest_ind(WW_alone, WW_ppl, equal_var=False, nan_policy='raise', \
+    permutations= None, random_state=None, alternative='greater', trim=0)
+print(pval_q7)
 
 
 # What proportion of movies exhibit such a “social watching” effect? 
+count = 0
+sig_diff = 0
+for movie in range(len(ratings)):
+    alone_rating = []
+    ppl_rating = []
+    for i in range(len(group_status)):
+        if np.isnan(group_status[i]) or np.isnan(ratings[movie][i]): continue
+        if group_status[i] == 1:
+            alone_rating.append(ratings[movie][i])
+            count+=1
+        elif group_status[i] == 0:
+            ppl_rating.append(ratings[movie][i])
+            count+=1   
+
+    if len(alone_rating) or len(ppl_rating) <= 30:
+        P = 20000
+    else:
+        P = 10000
+
+    pval = stats.ttest_ind(alone_rating, ppl_rating, equal_var=False, nan_policy='raise', \
+    permutations= P, random_state=123, alternative='two-sided', trim=0)
+
+    if pval[1] <= 0.05:
+        sig_diff+=1
+
+prop_diff = sig_diff/len(ratings)
+print(prop_diff)
+# About % of films expereince a social watching effect 
+
+
 # Is the ratings distribution of ‘Home Alone (1990)’ different than that of ‘Finding Nemo (2003)’?  
 # There are ratings on movies from several franchises ([‘Star Wars’, ‘Harry Potter’, ‘The Matrix’, ‘Indiana  Jones’, ‘Jurassic Park’,  ‘Pirates of the Caribbean’, ‘Toy Story’, ‘Batman’]) in this dataset. 
 # How many of these  are of inconsistent quality, as experienced by viewers? [Hint: You can use the keywords in quotation marks 
