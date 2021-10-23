@@ -76,7 +76,8 @@ med1 = np.median(sample_means_populars)
 med2 = np.median(sample_means_sleepers)
 plt.show()
 
-#TO-DO: ASSUMPTIONS, these have about the same dist so ok
+
+#TO-DO: ASSUMPTIONS for U TEST
 
 pval_q1 = stats.mannwhitneyu(sample_means_populars, sample_means_sleepers, alternative='greater', method='auto')
 print(pval_q1)
@@ -130,10 +131,10 @@ axs[0].hist(older, bins=n_bins)
 axs[1].hist(newer, bins=n_bins)
 plt.show()
 
-#TO DO: ASSUMPTIONS 
+#TO DO: ASSUMPTIONS for U
 variances2 = [st.variance(newer), st.variance(older)]
 
-pval_q2 = stats.mannwhitneyu(newer, older, alternative='greater', method='auto')
+pval_q2 = stats.mannwhitneyu(newer, older, alternative='two-sided', method='auto')
 print(pval_q2)       
 
 #As pval > 0.05 we fail to reject the null hypothesis. There is insufficient evidence to suggest that movies 
@@ -181,11 +182,9 @@ plt.show()
 
 variances3 = [st.variance(shrek_males), st.variance(shrek_females)]
 
-#Two sample t-test is relatively robust to the assumption of normality and homogeneity of variances when sample size 
-#is large (n ≥ 30) but vastly different sample size (permuations done for greater confidence). Variances not assumed equal here due to this fact (Welch t-test).
+#TO-DO: ASSUMPTIONS
+pval_q3 = stats.mannwhitneyu(sample_means_populars, sample_means_sleepers, alternative='two-sided', method='auto')
 
-pval_q3 = stats.ttest_ind(shrek_males, shrek_females, equal_var=False, nan_policy='raise', \
-    permutations=10000, random_state=123, alternative='two-sided', trim=0)
 print(pval_q3)
 
 #As pval > 0.05 we fail to reject the null hypothesis. There is insufficient evidence to suggest that enjoyment
@@ -221,16 +220,15 @@ for movie in range(len(ratings)):
         P = 20000
     else:
         P = 10000
-
-    pval = stats.ttest_ind(female_rating, male_rating, equal_var=False, nan_policy='raise', \
-    permutations= P, random_state=123, alternative='two-sided', trim=0)
+    
+    pval = stats.mannwhitneyu(female_rating, male_rating, alternative='two-sided', method='auto')
 
     if pval[1] <= 0.05:
         sig_diff+=1
 
 prop_diff = sig_diff/len(ratings)
 print(prop_diff)
-# About ~29% of movies show gendered preferences with an alpha 0.05
+# About ~XX% of movies show gendered preferences with an alpha 0.05
 
 # Do people who are only children enjoy ‘The Lion King (1994)’ more than people with siblings? 
 idx_child = input.columns.get_loc('Are you an only child? (1: Yes; 0: No; -1: Did not respond)')
@@ -250,8 +248,7 @@ for i in range(len(child_status)):
         count+=1
 
 if count!=len(LK_single)+len(LK_multi):error('POSSIBLE DATA MISMATCH')
-pval_q5 = stats.ttest_ind(LK_single, LK_multi, equal_var=False, nan_policy='raise', \
-    permutations= None, random_state=None, alternative='greater', trim=0)
+pval_q5 = stats.mannwhitneyu(LK_single, LK_multi, alternative='greater', method='auto')
 print(pval_q5)
 
 # What proportion of movies exhibit an “only child effect”, i.e. are rated different by viewers with siblings  vs. those without?  
@@ -274,15 +271,15 @@ for movie in range(len(ratings)):
     else:
         P = 10000
 
-    pval = stats.ttest_ind(single_rating, multi_rating, equal_var=False, nan_policy='raise', \
-    permutations= P, random_state=123, alternative='two-sided', trim=0)
+    pval_q1 = stats.mannwhitneyu(single_rating, multi_rating, alternative='two-sided', method='auto')
+
 
     if pval[1] <= 0.05:
         sig_diff+=1
 
 prop_diff = sig_diff/len(ratings)
 print(prop_diff)
-# About ~8% of movies show an "only child effect" with an alpha 0.05
+# About ~30% of movies show an "only child effect" with an alpha 0.05
 
 # Do people who like to watch movies socially enjoy ‘The Wolf of Wall Street (2013)’ more than those who  prefer to watch them alone? 
 idx_social = input.columns.get_loc('Movies are best enjoyed alone (1: Yes; 0: No; -1: Did not respond)')
@@ -302,8 +299,8 @@ for i in range(len(group_status)):
         count+=1
 
 if count!=len(WW_alone)+len(WW_ppl):error('POSSIBLE DATA MISMATCH')
-pval_q7 = stats.ttest_ind(WW_alone, WW_ppl, equal_var=False, nan_policy='raise', \
-    permutations= None, random_state=None, alternative='greater', trim=0)
+pval_q7 = stats.mannwhitneyu(WW_alone, WW_ppl, alternative='less', method='auto')
+
 print(pval_q7)
 
 
@@ -327,9 +324,7 @@ for movie in range(len(ratings)):
     else:
         P = 10000
 
-    pval = stats.ttest_ind(alone_rating, ppl_rating, equal_var=False, nan_policy='raise', \
-    permutations= P, random_state=123, alternative='two-sided', trim=0)
-
+    pval = stats.mannwhitneyu(alone_rating, ppl_rating, alternative='less', method='auto')
     if pval[1] <= 0.05:
         sig_diff+=1
 
