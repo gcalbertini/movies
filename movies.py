@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import stats
 import random
+import re
 
 # read csv file
 input = pd.read_csv("movieReplicationSet.csv")
@@ -20,6 +21,9 @@ data = np.array(data)
 movies_clean = []
 for entry in data: movies_clean.append(entry[~np.isnan(entry)])
 
+#TO DO: METHOD FOR PLOTTING WITH SPECIFIC LABELS (RATINGS VS AVG RATINGS ON X AXIS)
+#TO DO: Automated script writing for conclusions, global alpha vals
+#TO DO: Why use "input" then "movie_clean" then indexing. clean up
 
 movies = movies_clean[:400]
 # Are movies that are more popular (operationalized as having more ratings) rated higher than movies that 
@@ -62,7 +66,8 @@ for movie in populars: sample_means_populars.append(np.mean(movie))
 for movie in sleepers: sample_means_sleepers.append(np.mean(movie))
 variances1 = [st.variance(sample_means_populars), st.variance(sample_means_sleepers)]
 
-n_bins = 13
+
+n_bins = 10
 fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 axs[0].set_title("sample_means_populars")
 axs[1].set_title("sample_means_sleepers")
@@ -74,12 +79,12 @@ axs[0].hist(sample_means_populars, bins=n_bins)
 axs[1].hist(sample_means_sleepers, bins=n_bins)
 med1 = np.median(sample_means_populars)
 med2 = np.median(sample_means_sleepers)
+fig.tight_layout()
+fig.savefig('Q1.png', dpi=200) 
 plt.show()
 
-
-#TO-DO: ASSUMPTIONS for U TEST
-
-pval_q1 = stats.mannwhitneyu(sample_means_populars, sample_means_sleepers, alternative='greater', method='auto')
+pval_q1 = stats.ttest_ind(sample_means_populars, sample_means_sleepers, axis=0, equal_var=False, \
+nan_policy='raise', permutations=None, random_state=None, alternative='greater', trim=0)
 print(pval_q1)
 
 #As pval << 0.05 we reject the null hypothesis. There is sufficient evidence to suggest that movies that are more
@@ -97,8 +102,6 @@ mean_yrs = np.mean(years)
 
 sample_means_movies = []
 for i in range(len(years)): sample_means_movies.append(np.mean(movies_clean[i]))
-#movies_yr_rating = []
-#for i in range(len(years)): movies_yr_rating.append([years[i],sample_means_movies[i]])
 
 #median-split of movie years
 newer = []
@@ -119,7 +122,7 @@ for i in range(len(years)):
 
 if (len(newer)+len(older)!=400):error("DATA MISMATCH")
 
-n_bins = 13
+n_bins = 10
 fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 axs[0].set_title("sample_means_older")
 axs[1].set_title("sample_means_newer")
@@ -129,6 +132,8 @@ axs[0].set_xlabel('Avg Rating')
 axs[1].set_xlabel('Avg Rating')
 axs[0].hist(older, bins=n_bins)
 axs[1].hist(newer, bins=n_bins)
+fig.tight_layout()
+fig.savefig('Q2.png', dpi=200) 
 plt.show()
 
 #TO DO: ASSUMPTIONS for U
@@ -168,7 +173,7 @@ for i in range(len(genders)):
     else: error('GENDER MISMATCH')
 if count!=len(shrek_females)+len(shrek_males):error('POSSIBLE DATA MISMATCH')
 
-n_bins = 5
+n_bins = 10
 fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
 axs[0].set_title("sample_ratings_male")
 axs[1].set_title("sample_ratings_female")
@@ -178,6 +183,8 @@ axs[0].set_xlabel('Avg Rating')
 axs[1].set_xlabel('Avg Rating')
 axs[0].hist(shrek_males, bins=n_bins)
 axs[1].hist(shrek_females, bins=n_bins)
+fig.tight_layout()
+fig.savefig('Q3.png', dpi=200) 
 plt.show()
 
 variances3 = [st.variance(shrek_males), st.variance(shrek_females)]
@@ -187,7 +194,7 @@ pval_q3 = stats.mannwhitneyu(sample_means_populars, sample_means_sleepers, alter
 
 print(pval_q3)
 
-#As pval > 0.05 we fail to reject the null hypothesis. There is insufficient evidence to suggest that enjoyment
+#As pval << 0.05 we reject the null hypothesis. There is sufficient evidence to suggest that enjoyment
 #of Shrek (2001) is gendered.
 
 # What proportion of movies are rated differently by male and female viewers? 
@@ -228,7 +235,7 @@ for movie in range(len(ratings)):
 
 prop_diff = sig_diff/len(ratings)
 print(prop_diff)
-# About ~XX% of movies show gendered preferences with an alpha 0.05
+# About ~31% of movies (124) show gendered preferences with an alpha 0.05
 
 # Do people who are only children enjoy ‘The Lion King (1994)’ more than people with siblings? 
 idx_child = input.columns.get_loc('Are you an only child? (1: Yes; 0: No; -1: Did not respond)')
@@ -250,6 +257,22 @@ for i in range(len(child_status)):
 if count!=len(LK_single)+len(LK_multi):error('POSSIBLE DATA MISMATCH')
 pval_q5 = stats.mannwhitneyu(LK_single, LK_multi, alternative='greater', method='auto')
 print(pval_q5)
+#As pval >> 0.05 we fail to reject the null hypothesis; insifficient evidence to suggest single children 
+# enjoy LK more than those with siblings
+
+n_bins = 10
+fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
+axs[0].set_title("LK_single")
+axs[1].set_title("LK_multi")
+axs[0].set_ylabel('Counts')
+axs[1].set_ylabel('Counts')
+axs[0].set_xlabel('Avg Rating')
+axs[1].set_xlabel('Avg Rating')
+axs[0].hist(LK_single, bins=n_bins)
+axs[1].hist(LK_multi, bins=n_bins)
+fig.tight_layout()
+fig.savefig('Q5.png', dpi=200) 
+plt.show()
 
 # What proportion of movies exhibit an “only child effect”, i.e. are rated different by viewers with siblings  vs. those without?  
 count = 0
@@ -271,17 +294,16 @@ for movie in range(len(ratings)):
     else:
         P = 10000
 
-    pval_q1 = stats.mannwhitneyu(single_rating, multi_rating, alternative='two-sided', method='auto')
-
+    pval = stats.mannwhitneyu(single_rating, multi_rating, alternative='two-sided', method='auto')
 
     if pval[1] <= 0.05:
         sig_diff+=1
 
 prop_diff = sig_diff/len(ratings)
 print(prop_diff)
-# About ~30% of movies show an "only child effect" with an alpha 0.05
+# 10% of movies (40) are rated differently by viewers with siblings vs. those without with an alpha 0.05
 
-# Do people who like to watch movies socially enjoy ‘The Wolf of Wall Street (2013)’ more than those who  prefer to watch them alone? 
+# Do people who like to watch movies socially enjoy ‘The Wolf of Wall Street (2013)’ more than those who prefer to watch them alone? 
 idx_social = input.columns.get_loc('Movies are best enjoyed alone (1: Yes; 0: No; -1: Did not respond)')
 idx_ratings_WW = input.columns.get_loc('The Wolf of Wall Street (2013)')
 WW_alone = [] 
@@ -300,9 +322,23 @@ for i in range(len(group_status)):
 
 if count!=len(WW_alone)+len(WW_ppl):error('POSSIBLE DATA MISMATCH')
 pval_q7 = stats.mannwhitneyu(WW_alone, WW_ppl, alternative='less', method='auto')
-
 print(pval_q7)
+#AS pval >> 0.05, fail to reject null hypothesis; insufficient evidence to suggest people who like to watch movies socially
+#enjoy WW more than those who prefer to watch them alone
 
+n_bins = 10
+fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
+axs[0].set_title("WW_alone")
+axs[1].set_title("WW_ppl")
+axs[0].set_ylabel('Counts')
+axs[1].set_ylabel('Counts')
+axs[0].set_xlabel('Rating')
+axs[1].set_xlabel('Rating')
+axs[0].hist(WW_alone, bins=n_bins)
+axs[1].hist(WW_ppl, bins=n_bins)
+fig.tight_layout()
+fig.savefig('Q7.png', dpi=200) 
+plt.show()
 
 # What proportion of movies exhibit such a “social watching” effect? 
 count = 0
@@ -330,10 +366,39 @@ for movie in range(len(ratings)):
 
 prop_diff = sig_diff/len(ratings)
 print(prop_diff)
-# About % of films expereince a social watching effect 
+# 7.75% of films (31) experience a social watching effect 
 
 
 # Is the ratings distribution of ‘Home Alone (1990)’ different than that of ‘Finding Nemo (2003)’?  
+
+idx_ratings_FN = input.columns.get_loc('Finding Nemo (2003)')
+idx_ratings_HA = input.columns.get_loc('Home Alone (1990)')
+# can use movies_clean here instead lol
+ratings_FN = data[idx_ratings_FN] 
+ratings_HA= data[idx_ratings_HA]
+ratings_FN = ratings_FN[~np.isnan(ratings_FN)]
+ratings_HA = ratings_HA[~np.isnan(ratings_HA)]
+
+n_bins = 10
+fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
+axs[0].set_title("ratings_FN")
+axs[1].set_title("ratings_HA")
+axs[0].set_ylabel('Counts')
+axs[1].set_ylabel('Counts')
+axs[0].set_xlabel('Rating')
+axs[1].set_xlabel('Rating')
+axs[0].hist(ratings_FN, bins=n_bins)
+axs[1].hist(ratings_HA, bins=n_bins)
+fig.tight_layout()
+fig.savefig('Q9.png', dpi=200) 
+plt.show()
+
+pval_q9 = stats.ks_2samp(ratings_FN, ratings_HA, alternative='two-sided', mode='auto')
+print(pval_q9)
+#As pval << 0.05 we reject the null hyp; there is sufficient evidence to claim that the twp distributions are indeed different
+
+
 # There are ratings on movies from several franchises ([‘Star Wars’, ‘Harry Potter’, ‘The Matrix’, ‘Indiana  Jones’, ‘Jurassic Park’,  ‘Pirates of the Caribbean’, ‘Toy Story’, ‘Batman’]) in this dataset. 
 # How many of these  are of inconsistent quality, as experienced by viewers? [Hint: You can use the keywords in quotation marks 
 # featured in this question to identify the movies that are part of each franchise]  
+#TO DO: regex - match blah blah Franchise Name blah blah and return all matches for movie in movie list
