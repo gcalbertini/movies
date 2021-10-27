@@ -9,7 +9,7 @@ import re
 import itertools
 
 
-#Movie class
+#Movie class -- future work: introduce sets (dict are unordered but structure here v ordered), debug, more clever algos, use pandas vs numpy everything
 
 class movie:
 
@@ -44,15 +44,22 @@ class movie:
             for entry in self.data: self.data_dropnan.append(entry[~np.isnan(entry)])
             return self.data_dropnan
 
-    def table(self, dropNan = False):
+    def table(self, dropNan = False, moviesOnly = False):
         self.dict = {}
         data = self.columnData(dropNan)
         self.titles = list(self.dataset.columns)
         d = 0
-        for title in self.titles:
-            self.dict.__setitem__(title, data[d]) 
-            d+=1
-        return self.dict
+        if not moviesOnly:
+            for title in self.titles:
+                self.dict.__setitem__(title, data[d]) 
+                d+=1
+            return self.dict
+        else:
+            for title in self.titles[:self.movieCols]:
+                self.dict.__setitem__(title, data[d]) 
+                d+=1
+            return self.dict
+
 
     def popularity(self, colTitle = "All"):
         self.entry = colTitle
@@ -73,15 +80,15 @@ class movie:
 
         return self.popularities
     
-    def plot(self,x,y, name = "FIGUREX", n_bins = 10,titleX="Xtitle",titleY="Ytitle",x1="xlbl1",y1="ylbl1",x2="xlbl2",y2="ylbl2"):
+    def plot(self,x,y, name = "FIGUREX", n_bins = 10,titleX="Xtitle",titleY="Ytitle",x1="xlbl1",x2="xlbl2",y1="ylbl1",y2="ylbl2"):
         n_bins = 10
         fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
         axs[0].set_title(titleX)
         axs[1].set_title(titleY)
-        axs[0].set_ylabel(y1)
-        axs[1].set_ylabel(y2)
-        axs[0].set_xlabel(x1)
-        axs[1].set_xlabel(x2)
+        axs[0].set_ylabel(x1)
+        axs[1].set_ylabel(y1)
+        axs[0].set_xlabel(x2)
+        axs[1].set_xlabel(y2)
         axs[0].hist(x, bins=n_bins)
         axs[1].hist(y, bins=n_bins)
         fig.tight_layout()
@@ -108,8 +115,25 @@ class movie:
                 res = "fail to reject"
                 eq = ">"
 
-            print("As p-value of {pval} is {sign} alpha of {alpha} at test statistic {stat}, we {res} the null hypothesis.\nThere is {suf} evidence to suggest that {analysis}.".format(sign = eq, \
-                pval = format(self.val[1],".5f"), stat = format(self.val[0],".5f"), alpha= self.alpha, suf = s, res = res, analysis=text.lstrip()))     
+            print("As p-value of {pval} is {sign} alpha of {alpha} at test statistic {stat}, we {res} the null hypothesis.\nThere is {suf} evidence to suggest that {analysis}".format(sign = eq, \
+                pval = format(self.val[1],".5f"), stat = format(self.val[0],".3f"), alpha= self.alpha, suf = s, res = res, analysis=text.lstrip()))     
+        else:
+            return self.val
+   
+    def utest2(self, x,y, hyp = 'two-sided', text = "that <what you try to test>"):
+        self.val = stats.mannwhitneyu(x, y, alternative='two-sided', method='auto')
+        if self.verbose:
+            if self.val[1] < self.alpha:
+                s = "sufficient"
+                res = "reject"
+                eq = "<"
+            else:
+                s = "insufficient"
+                res = "fail to reject"
+                eq = ">"
+
+            print("As p-value of {pval} is {sign} alpha of {alpha} at test statistic {stat}, we {res} the null hypothesis.\nThere is {suf} evidence to suggest that {analysis}".format(sign = eq, \
+                pval = format(self.val[1],".5f"), stat = format(self.val[0],".3f"), alpha= self.alpha, suf = s, res = res, analysis=text.lstrip()))     
         else:
             return self.val
 
@@ -121,55 +145,49 @@ class movie:
             self.years.append(re.findall(r'\d+', title)) #fix [['2001'],['1995'],...] if you have time
         self.years = [i[0] for i in self.years]
         return list(map(int, self.years))
-        
-            
-
+    
+    def rowElimWRT_ref_col(self, ref_col_title, compared_col_title):
+        df = Movies.dataset
+        mod_df = df.dropna( how='any', subset=[ref_col_title, compared_col_title])
+        return np.array(mod_df[ref_col_title]), np.array(mod_df[compared_col_title])
+   
 
 Movies = movie()
-testcol = Movies.columnData(dropNan = False)
-test = Movies.popularity()
-table = Movies.table(dropNan = True)
+#Some useful dictionaries
+data_clean = Movies.table(dropNan=True)
+movies_clean = Movies.table(dropNan=True, moviesOnly=True)
 
 # read csv file
-input = pd.read_csv("movieReplicationSet.csv")
-df = input.to_numpy()
-data = []
-for col in range(df.shape[1]):
-    vec = []
-    for row in range(df.shape[0]):
-        vec.append(df[row,col])
-    data.append(vec)
-data = np.array(data)
+# input = pd.read_csv("movieReplicationSet.csv")
+# df = input.to_numpy()
+# data = []
+# for col in range(df.shape[1]):
+#     vec = []
+#     for row in range(df.shape[0]):
+#         vec.append(df[row,col])
+#     data.append(vec)
+# data = np.array(data)
 
-movies_clean = []
-for entry in data: movies_clean.append(entry[~np.isnan(entry)])
-
-#TO DO: METHOD FOR PLOTTING WITH SPECIFIC LABELS (RATINGS VS AVG RATINGS ON X AXIS)
-#TO DO: Automated script writing for conclusions, global alpha vals
-#TO DO: Why use "input" then "movie_clean" then indexing. clean up dict  of Movie Name: np.array()
-
-movies = movies_clean[:400]
-# Are movies that are more popular (operationalized as having more ratings) rated higher than movies that 
-# are less popular? 
-
+#movies_clean = []
+#for entry in data: movies_clean.append(entry[~np.isnan(entry)])
 
 movies_popularities = Movies.popularity()
 median_pop = st.median(movies_popularities)
 populars = []
 sleepers = []
+movies_col = Movies.columnData(dropNan=True)
 #median-split of movie popularities
 for i in range(len(movies_popularities)):
     if movies_popularities[i] > median_pop:
-        populars.append(movies_clean[i])
+        populars.append(movies_col[i])
     elif movies_popularities[i] < median_pop:
-        sleepers.append(movies_clean[i])
-
+        sleepers.append(movies_col[i])
     if movies_popularities[i] == median_pop:
         choice = random.randint(0, 1)
         if choice:
-            populars.append(movies_clean[i])
+            populars.append(movies_col[i])
         else:
-            sleepers.append(movies_clean[i])
+            sleepers.append(movies_col[i])
     
 if (len(sleepers)+len(populars)!=400):error("DATA MISMATCH")
             
@@ -181,31 +199,29 @@ for movie in sleepers: sample_means_sleepers.append(np.mean(movie))
 Movies.plot(sample_means_populars, sample_means_sleepers, "Q1", n_bins = 10, titleX = "sample_means_populars",titleY = "sample_means_sleepers", \
     x1="Counts",y1="Counts",x2="Avg Rating",y2="Avg Rating")
 
-pval_q1 = stats.ttest_ind(sample_means_populars, sample_means_sleepers, axis=0, equal_var=False, \
-nan_policy='raise', permutations=None, random_state=None, alternative='greater', trim=0)
-print(pval_q1)
-pval1 = Movies.ttest2(sample_means_populars,sample_means_sleepers, hyp = 'greater', text = "that movies that are more\
-popular have ratings that are higher than movies that are less popular")
+#pval_q1 = stats.ttest_ind(sample_means_populars, sample_means_sleepers, axis=0, equal_var=False, \
+#nan_policy='raise', permutations=None, random_state=None, alternative='greater', trim=0)
+#print(pval_q1)
+pval1 = Movies.ttest2(sample_means_populars,sample_means_sleepers, hyp = 'greater', text = "that movies that are more \
+popular have ratings that are higher than movies that are less popular.")
 
 # Are movies that are newer rated differently than movies that are older? 
-movie_yrs = input.iloc[0,:400].to_string()
 movie_yrs = Movies.movieYrs()
 mean_yrs = np.mean(movie_yrs)
-
 sample_means_movies = []
-for i in range(len(movie_yrs)): sample_means_movies.append(np.mean(movies_clean[i]))
+for ratings in movies_col: sample_means_movies.append(np.mean(ratings))
 
 #median-split of movie years
 newer = []
 older = []
-median_age = st.median(years)
-for i in range(len(years)):
-    if years[i] > median_age:
+median_age = st.median(movie_yrs)
+for i in range(len(movie_yrs)):
+    if movie_yrs[i] > median_age:
         newer.append(sample_means_movies[i])
-    elif years[i] < median_age:
+    elif movie_yrs[i] < median_age:
         older.append(sample_means_movies[i])
 
-    if years[i] == median_age:
+    if movie_yrs[i] == median_age:
         choice = random.randint(0, 1)
         if choice:
             newer.append(sample_means_movies[i])
@@ -214,40 +230,23 @@ for i in range(len(years)):
 
 if (len(newer)+len(older)!=400):error("DATA MISMATCH")
 
-n_bins = 10
-fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
-axs[0].set_title("sample_means_older")
-axs[1].set_title("sample_means_newer")
-axs[0].set_ylabel('Counts')
-axs[1].set_ylabel('Counts')
-axs[0].set_xlabel('Avg Rating')
-axs[1].set_xlabel('Avg Rating')
-axs[0].hist(older, bins=n_bins)
-axs[1].hist(newer, bins=n_bins)
-fig.tight_layout()
-fig.savefig('Q2.png', dpi=200) 
-plt.show()
+Movies.plot(older, newer, "Q2", n_bins = 10, titleX = "sample_means_older",titleY = "sample_means_newer", \
+    x1="Counts",y1="Counts",x2="Avg Rating",y2="Avg Rating")
 
-#TO DO: ASSUMPTIONS for U
-variances2 = [st.variance(newer), st.variance(older)]
-
-pval_q2 = stats.mannwhitneyu(newer, older, alternative='two-sided', method='auto')
-print(pval_q2)       
-
-#As pval > 0.05 we fail to reject the null hypothesis. There is insufficient evidence to suggest that movies 
-#that are newer are rated differently than movies that are older.
+#pval_q2 = stats.mannwhitneyu(newer, older, alternative='two-sided', method='auto')
+#print(pval_q2)     
+pval2 = Movies.utest2(newer,older, hyp = 'two-sided', text = "that newer movies are rated differently than older films.")  
 
 # Is enjoyment of ‘Shrek (2001)’ gendered, i.e. do male and female viewers rate it differently? 
 
-idx_gender = input.columns.get_loc('Gender identity (1 = female; 2 = male; 3 = self-described)')
-idx_ratings_shrek = input.columns.get_loc('Shrek (2001)')
 shrek_males = [] 
 shrek_females = []
-genders = np.array(data[idx_gender])
-ratings_shrek = np.array(data[idx_ratings_shrek])
+#row-wise elimination of entries needed as gender may have NAN for entries movie does not and vice-versa
+genders, ratings_shrek = Movies.rowElimWRT_ref_col('Gender identity (1 = female; 2 = male; 3 = self-described)','Shrek (2001)')
+
 count = 0
 for i in range(len(genders)):
-    if np.isnan(genders[i]) or np.isnan(ratings_shrek[i]): continue
+   
     if genders[i] == 1:
         shrek_females.append(ratings_shrek[i])
         count+=1
@@ -265,31 +264,19 @@ for i in range(len(genders)):
     else: error('GENDER MISMATCH')
 if count!=len(shrek_females)+len(shrek_males):error('POSSIBLE DATA MISMATCH')
 
-n_bins = 10
-fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
-axs[0].set_title("sample_ratings_male")
-axs[1].set_title("sample_ratings_female")
-axs[0].set_ylabel('Counts')
-axs[1].set_ylabel('Counts')
-axs[0].set_xlabel('Avg Rating')
-axs[1].set_xlabel('Avg Rating')
-axs[0].hist(shrek_males, bins=n_bins)
-axs[1].hist(shrek_females, bins=n_bins)
-fig.tight_layout()
-fig.savefig('Q3.png', dpi=200) 
-plt.show()
+Movies.plot(shrek_males, shrek_females, "Q3", n_bins = 3, titleX = "sample_ratings_male",titleY = "sample_ratings_female", \
+    x1="Counts",y1="Counts",x2="Rating",y2="Rating")
 
-variances3 = [st.variance(shrek_males), st.variance(shrek_females)]
 
-#TO-DO: ASSUMPTIONS
-pval_q3 = stats.mannwhitneyu(sample_means_populars, sample_means_sleepers, alternative='two-sided', method='auto')
+#pval_q3 = stats.mannwhitneyu(shrek_males, shrek_females, alternative='two-sided', method='auto')
+#print(pval_q3)
+pval3 = Movies.utest2(shrek_males,shrek_females, hyp = 'two-sided', text = "that enjoyment of Shrek (2001) is gendered.")  
 
-print(pval_q3)
-
-#As pval << 0.05 we reject the null hypothesis. There is sufficient evidence to suggest that enjoyment
-#of Shrek (2001) is gendered.
 
 # What proportion of movies are rated differently by male and female viewers? 
+Movies.proportion("gender blah")
+
+
 ratings = np.array(data[:400])
 count = 0
 sig_diff = 0
