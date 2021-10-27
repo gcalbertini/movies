@@ -6,6 +6,129 @@ from matplotlib import pyplot as plt
 from scipy import stats
 import random
 import re
+import itertools
+
+
+#Movie class
+
+class movie:
+
+    def __init__(self, dataset="movieReplicationSet.csv", alpha = 0.05, verbose = True, movieCols = 400):
+        self.alpha = alpha
+        self.movieCols = movieCols
+
+        try: 
+            self.dataset = pd.read_csv(dataset)
+        except FileNotFoundError:
+            error("File not found!")
+
+        self.movies= dict(itertools.islice(self.table(dropNan=True).items(), movieCols)) 
+        self.verbose = True
+
+    #Note: "dropNan" will drop non-numeric values from the number values associated with each column from the spreadsheet,
+    #thus will not do row-wise element elimination for blanks or NAN"
+    def columnData(self, dropNan = False):
+        self.df = self.dataset.values
+        self.data = []
+        for col in range(self.df.shape[1]):
+            vec = []
+            for row in range(self.df.shape[0]):
+                vec.append(self.df[row,col])
+            self.data.append(vec)
+        self.data = np.array(self.data) 
+
+        if dropNan == False:
+            return self.data
+        else: 
+            self.data_dropnan = []
+            for entry in self.data: self.data_dropnan.append(entry[~np.isnan(entry)])
+            return self.data_dropnan
+
+    def table(self, dropNan = False):
+        self.dict = {}
+        data = self.columnData(dropNan)
+        self.titles = list(self.dataset.columns)
+        d = 0
+        for title in self.titles:
+            self.dict.__setitem__(title, data[d]) 
+            d+=1
+        return self.dict
+
+    def popularity(self, colTitle = "All"):
+        self.entry = colTitle
+        titles = list(self.dataset.columns)
+        titles = titles[:self.movieCols]
+        validMovie = [colTitle in titles or colTitle == "All"]
+        self.popularities = []
+        if validMovie:
+            if colTitle == "All":
+                for reviews in self.movies.values():
+                    self.popularities.append(len(reviews))
+            else:
+                for key, reviews in self.movies.items():
+                    if key == colTitle:
+                        self.popularities.append(len(reviews))
+        else:
+            error("Title of film not in column headers.")
+
+        return self.popularities
+    
+    def plot(self,x,y, name = "FIGUREX", n_bins = 10,titleX="Xtitle",titleY="Ytitle",x1="xlbl1",y1="ylbl1",x2="xlbl2",y2="ylbl2"):
+        n_bins = 10
+        fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
+        axs[0].set_title(titleX)
+        axs[1].set_title(titleY)
+        axs[0].set_ylabel(y1)
+        axs[1].set_ylabel(y2)
+        axs[0].set_xlabel(x1)
+        axs[1].set_xlabel(x2)
+        axs[0].hist(x, bins=n_bins)
+        axs[1].hist(y, bins=n_bins)
+        fig.tight_layout()
+        fig.savefig(name,dpi=200) 
+        plt.show()
+
+    #Two sample t-test (unpaired or independent t-test)
+    #The two-sample (unpaired or independent) t-test compares the means of two independent groups,
+    #determining whether they are equal or significantly different. In two sample t-test, usually,
+    #we compute the sample means from two groups and derives the conclusion for the population’s
+    #means (unknown means) from which two groups are drawn.
+    def ttest2(self, x,y,hyp = 'two-sided', text = "that <what you try to test>"):
+        var1 = st.variance(x)
+        var2 = st.variance(y)
+        varianceEqual = [abs((var1-var2)/var1) < 0.1]
+        self.val = stats.ttest_ind(x, y, axis=0, equal_var=varianceEqual, nan_policy='raise', alternative=hyp)
+        if self.verbose:
+            if self.val[1] < self.alpha:
+                s = "sufficient"
+                res = "reject"
+                eq = "<"
+            else:
+                s = "insufficient"
+                res = "fail to reject"
+                eq = ">"
+
+            print("As p-value of {pval} is {sign} alpha of {alpha} at test statistic {stat}, we {res} the null hypothesis.\nThere is {suf} evidence to suggest that {analysis}.".format(sign = eq, \
+                pval = format(self.val[1],".5f"), stat = format(self.val[0],".5f"), alpha= self.alpha, suf = s, res = res, analysis=text.lstrip()))     
+        else:
+            return self.val
+
+    def movieYrs(self):
+        titles = list(self.dataset.columns)
+        titles = titles[:self.movieCols]
+        self.years = []
+        for title, data in self.movies.items():
+            self.years.append(re.findall(r'\d+', title)) #fix [['2001'],['1995'],...] if you have time
+        self.years = [i[0] for i in self.years]
+        return list(map(int, self.years))
+        
+            
+
+
+Movies = movie()
+testcol = Movies.columnData(dropNan = False)
+test = Movies.popularity()
+table = Movies.table(dropNan = True)
 
 # read csv file
 input = pd.read_csv("movieReplicationSet.csv")
@@ -23,23 +146,14 @@ for entry in data: movies_clean.append(entry[~np.isnan(entry)])
 
 #TO DO: METHOD FOR PLOTTING WITH SPECIFIC LABELS (RATINGS VS AVG RATINGS ON X AXIS)
 #TO DO: Automated script writing for conclusions, global alpha vals
-#TO DO: Why use "input" then "movie_clean" then indexing. clean up
+#TO DO: Why use "input" then "movie_clean" then indexing. clean up dict  of Movie Name: np.array()
 
 movies = movies_clean[:400]
 # Are movies that are more popular (operationalized as having more ratings) rated higher than movies that 
 # are less popular? 
 
-#Two sample t-test (unpaired or independent t-test)
-#The two-sample (unpaired or independent) t-test compares the means of two independent groups,
-#determining whether they are equal or significantly different. In two sample t-test, usually,
-#we compute the sample means from two groups and derives the conclusion for the population’s
-#means (unknown means) from which two groups are drawn.
 
-#H_0: mean_populars = mean_sleepers
-#H_1: mean_populars > mean_sleepers
-
-#counting up non-NaN elements for each film; these are number of reviews given per problem statement--"popularity"
-movies_popularities = [len(movies[i]) for i in range(len(movies))]
+movies_popularities = Movies.popularity()
 median_pop = st.median(movies_popularities)
 populars = []
 sleepers = []
@@ -59,49 +173,27 @@ for i in range(len(movies_popularities)):
     
 if (len(sleepers)+len(populars)!=400):error("DATA MISMATCH")
             
-
 sample_means_populars = []
 sample_means_sleepers = []
 for movie in populars: sample_means_populars.append(np.mean(movie))
 for movie in sleepers: sample_means_sleepers.append(np.mean(movie))
-variances1 = [st.variance(sample_means_populars), st.variance(sample_means_sleepers)]
 
-
-n_bins = 10
-fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
-axs[0].set_title("sample_means_populars")
-axs[1].set_title("sample_means_sleepers")
-axs[0].set_ylabel('Counts')
-axs[1].set_ylabel('Counts')
-axs[0].set_xlabel('Avg Rating')
-axs[1].set_xlabel('Avg Rating')
-axs[0].hist(sample_means_populars, bins=n_bins)
-axs[1].hist(sample_means_sleepers, bins=n_bins)
-med1 = np.median(sample_means_populars)
-med2 = np.median(sample_means_sleepers)
-fig.tight_layout()
-fig.savefig('Q1.png', dpi=200) 
-plt.show()
+Movies.plot(sample_means_populars, sample_means_sleepers, "Q1", n_bins = 10, titleX = "sample_means_populars",titleY = "sample_means_sleepers", \
+    x1="Counts",y1="Counts",x2="Avg Rating",y2="Avg Rating")
 
 pval_q1 = stats.ttest_ind(sample_means_populars, sample_means_sleepers, axis=0, equal_var=False, \
 nan_policy='raise', permutations=None, random_state=None, alternative='greater', trim=0)
 print(pval_q1)
-
-#As pval << 0.05 we reject the null hypothesis. There is sufficient evidence to suggest that movies that are more
-#popular have ratings that are higher than movies that are less popular.
+pval1 = Movies.ttest2(sample_means_populars,sample_means_sleepers, hyp = 'greater', text = "that movies that are more\
+popular have ratings that are higher than movies that are less popular")
 
 # Are movies that are newer rated differently than movies that are older? 
 movie_yrs = input.iloc[0,:400].to_string()
-entries = movie_yrs.split('\n')
-years = []
-for movie in entries:
-    years.append(movie[movie.find("(")+1:movie.find(")")])
-years[6] = '1985' #Rambo: First Blood Part II missing date
-years = list(map(int, years))
-mean_yrs = np.mean(years)
+movie_yrs = Movies.movieYrs()
+mean_yrs = np.mean(movie_yrs)
 
 sample_means_movies = []
-for i in range(len(years)): sample_means_movies.append(np.mean(movies_clean[i]))
+for i in range(len(movie_yrs)): sample_means_movies.append(np.mean(movies_clean[i]))
 
 #median-split of movie years
 newer = []
