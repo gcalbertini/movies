@@ -33,7 +33,39 @@ class movie:
             if str in title:
                 self.franchises[title]=ratings 
         return self.franchises
-        
+
+    def franchiseDiff(self, franchisesList, hyp = 'two-sided', text = "franchise shows inconsitent quality across its movie ratings.", alpha_ratio = 1):
+        if franchisesList == None: error("At least one franchise must be entered!")
+        self.verbose = False
+        self.diff = [] #keep a list of discrepant distributions using KS test
+        for franchiseName in franchisesList:
+            #franchise iterating over list of franchise input values
+            franchise = self.franchiseFinder(franchiseName) #now becomes all key-value pairs of movies for that franchise [A1:1,A2:2,A3:3,A4:4]
+            #now a list of all values (ratings data) for those franchise films [1,2,3,4]
+            data = list(franchise.values())
+            count = len(data) #4 in this example
+            start_compared = 0
+            next_compared = start_compared+1
+            res = franchiseName + ' franchise does not show inconsistent ' + text
+            while start_compared < count-1:
+            #compare data sets 1-2, 1-3, 1-4 | 2-3, 2-4 | 3-4
+                
+                pval = self.kstest2(data[start_compared], data[next_compared], hyp)
+                next_compared+=1
+
+                if pval[1] < alpha_ratio*self.alpha:
+                    res = franchiseName + ' franchise shows INCONSISTENT ' + text
+                    break 
+
+                if next_compared == count:
+                    start_compared+=1
+                    next_compared = start_compared+1
+
+            self.diff+=[res] 
+
+        self.verbose = True
+        return self.diff
+
 
     #Note: "dropNan" will drop non-numeric values from the number values associated with each column from the spreadsheet,
     #thus will not do row-wise element elimination for blanks or NAN"
@@ -230,7 +262,8 @@ class movie:
         print("About {p}% of movies ({count}) {analysis}\n".format(p = format(100*self.prop,".2f"), analysis = text, count = int(self.prop*self.movieCols)))
         self.verbose = True #revert to default
         return self.prop, self.pvals
-            
+
+       
             
 
 Movies = movie()
@@ -413,17 +446,18 @@ ratings_FN, ratings_HA = Movies.rowElim('Finding Nemo (2003)','Home Alone (1990)
 Movies.plot(WW_alone, WW_ppl, "Q9", n_bins = 7, titleX = "Finding Nemo (2003)",titleY = "Home Alone (1990)", \
     x1="Counts",y1="Counts",x2="Rating",y2="Rating")
 
-Movies.kstest2(ratings_HA,ratings_FN,text="that the two distributions are different.")
+pval9 = Movies.kstest2(ratings_HA,ratings_FN,text="that the two distributions are different.")
 #=========================================================================================================================
 #=========================================================================================================================
 
 # There are ratings on movies from several franchises ([‘Star Wars’, ‘Harry Potter’, ‘The Matrix’, ‘Indiana  Jones’, ‘Jurassic Park’,  ‘Pirates of the Caribbean’, ‘Toy Story’, ‘Batman’]) in this dataset. 
 # How many of these  are of inconsistent quality, as experienced by viewers? [Hint: You can use the keywords in quotation marks 
 # featured in this question to identify the movies that are part of each franchise]  
-#TO DO: regex - match blah blah Franchise Name blah blah and return all matches for movie in movie list
-SW = Movies.franchiseFinder('Star Wars')
-HP = Movies.franchiseFinder('Harry Potter')
-IJ = Movies.franchiseFinder('Indiana Jones')
-JP = Movies.franchiseFinder('Jurassic Park')
-MX = Movies.franchiseFinder('Matrix')
-PC = Movies.franchiseFinder('Toy Story')
+
+franchisesList = ['Star Wars', 'Harry Potter', 'The Matrix', 'Indiana Jones', 'Jurassic Park', 'Pirates of the Caribbean', 'Toy Story', 'Batman']
+discrepant10 = Movies.franchiseDiff(franchisesList, hyp = 'two-sided', text = "quality across its movie ratings.", alpha_ratio=2)
+[print(res) for res in discrepant10]
+
+#=========================================================================================================================
+#=========================================================================================================================
+#Bonus something
