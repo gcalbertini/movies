@@ -8,6 +8,8 @@ import random
 import re
 import itertools
 
+from scipy.stats.morestats import anderson_ksamp
+
 
 #Movie class -- future work: introduce sets (dict are unordered but structure here v ordered), debug, more clever algos
 
@@ -275,9 +277,6 @@ class movie:
 #=========================================================================================================================
 
 Movies = movie()
-#Some useful dictionaries
-movies_clean = Movies.table(dropNan=True, moviesOnly=True)
-movies_col = Movies.columnData(dropNan=True)
 
 #=========================================================================================================================
 #=========================================================================================================================
@@ -287,6 +286,7 @@ movies_popularities = Movies.popularity()
 median_pop = st.median(movies_popularities)
 populars = []
 sleepers = []
+movies_col = Movies.columnData(dropNan=True)
 
 #median-split of movie popularities
 for i in range(len(movies_popularities)):
@@ -472,10 +472,52 @@ discrepant10 = Movies.franchiseDiff(franchisesList, hyp = 'two-sided', text = "q
 
 #=========================================================================================================================
 #=========================================================================================================================
-#Bonus: Tell us something interesting and true (supported by a significance test of some kind) about the 
-#movies in this dataset that is not already covered by the questions above [for 5% of the grade score].
+#Bonus: Do men enjoy horror/thriller movies more than females? Is enjoyment of such films "gendered"?
+horrors = ['A Nightmare on Elm Street (1984)','Psycho (1960)','Alien (1979)','Night of the Living Dead (1968)','The Silence of the Lambs (1991)',\
+'The Others (2001)', 'The Texas Chainsaw Massacre (1974)', 'The Omen (1976)','Poltergeist (1982)','The Exorcist (1973)','The Conjuring (2013)','The Shining (1980)'\
+    , 'Shutter Island (2010)','Carrie (1976)','The Evil Dead (1981)','The Blair Witch Project (1999)','The Ring (2002)',"Bram Stoker's Dracula (1992)",'Hannibal (2001)',\
+        'Ouija: Origin of Evil (2016)', 'Predator (1987)', 'What Lies Beneath (2000)','The Mist (2007)', 'Halloween (1978)','Saw (2004)','Aliens (1986)','Friday the 13th Part III (1982)']
+table = Movies.table(dropNan = False, moviesOnly = True)
+male_more = 0
+male_more_alpha2 = 0
+for horror in horrors:
+    genders, ratings = Movies.rowElim('Gender identity (1 = female; 2 = male; 3 = self-described)', horror)
+    males = [] 
+    females = []
+    
+    count = 0
+    for i in range(len(genders)):
+    
+        if genders[i] == 1:
+            females.append(ratings[i])
+            count+=1
+        elif genders[i] == 2:
+            males.append(ratings[i])
+            count+=1
+        #due to scarcity of additional info on self-described individuals, gender randomly assigned for them
+        elif genders[i] == 3:
+            count+=1
+            choice = random.randint(0,1)
+            if choice:
+                males.append(ratings[i])
+            else:
+                females.append(ratings[i])
+        else: error('GENDER MISMATCH')
+    if count!=len(females)+len(males):error('POSSIBLE DATA MISMATCH')
+  
+    Movies.verbose = False
+    pval = Movies.utest2(males,females, hyp = 'greater', text = None)
+    
+    if pval[1] < Movies.alpha:
+        male_more+=1  
+    
+    Movies.alpha = Movies.alpha*2
+    pval = Movies.utest2(males,females, hyp = 'greater', text = None)
+    
+    if pval[1] < Movies.alpha:
+        male_more_alpha2+=1  
 
-#anderson 2test to see how many of the movie ratings follow normal dist at 5%
-#anderson 1test to see how many movie ratings for males/fem follow exponential dist vs normal dist (repeat 1 sample twice)
+print('\nOnly {count} of these horror thrillers (about {ratio}%) were enjoyed more by males than females!'.format(count=male_more, ratio = format(100*male_more/len(horrors),".1f")))
+print('Even if we double the alpha, only {count} of these horror thrillers (about {ratio}%) seem to be enjoyed more by males than females.\n'.format(count=male_more_alpha2, ratio = format(100*male_more_alpha2/len(horrors),".1f")))
 
 #TO DO - remove class from implementation + jupyter transfer
