@@ -8,7 +8,7 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/movies.py",
+            "program": "${workspaceFolder}/myModules/movieClass.py",
             "console": "integratedTerminal"
         }
     ]
