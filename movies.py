@@ -158,9 +158,15 @@ class movie:
                 res = "fail to reject"
 
             print("As p-value of {pval} is {sign} alpha of {alpha} at test statistic {stat}, we {res} the null hypothesis.\nThere is {suf} evidence to suggest that {analysis}\n".format(sign = eq, \
-                pval = format(self.val[1],".5f"), stat = format(self.val[0],".3f"), alpha= self.alpha, suf = s, res = res, analysis=text.lstrip()))     
+                pval = format(self.val[1],".5f"), stat = format(self.val[0],".2f"), alpha= self.alpha, suf = s, res = res, analysis=text.lstrip()))     
         else:
             return self.val
+
+    #Assumptions for U test: You should have independence of observations, which means that there is no relationship between 
+    # the observations in each group of the independent variable or between the groups themselves. For example, there must be different participants 
+    # in each group with no participant being in more than one group. 
+    # The distribution of scores for (example) "males" and the distribution of scores for "females" for the 
+    # independent variable, "gender") MUST have roughly the same shape.
    
     def utest2(self, x,y, hyp = 'two-sided', text = "that <what you try to test>"):
         self.val = stats.mannwhitneyu(x, y, alternative=hyp, method='auto')
@@ -175,7 +181,7 @@ class movie:
                 res = "fail to"
 
             print("As p-value of {pval} is {sign} alpha of {alpha} at test statistic {stat}, we {res} the null hypothesis.\nThere is {suf} evidence to suggest that {analysis}\n".format(sign = eq, \
-                pval = format(self.val[1],".5f"), stat = format(self.val[0],".3f"), alpha= self.alpha, suf = s, res = res, analysis=text.lstrip()))     
+                pval = format(self.val[1],".5f"), stat = format(self.val[0],".2f"), alpha= self.alpha, suf = s, res = res, analysis=text.lstrip()))     
         else:
             return self.val
 
@@ -193,7 +199,7 @@ class movie:
                 res = "fail to reject"
 
             print("As p-value of {pval} is {sign} alpha of {alpha} at test statistic {stat}, we {res} the null hypothesis.\nThere is {suf} evidence to suggest that {analysis}\n".format(sign = eq, \
-                pval = format(self.val[1],".5f"), stat = format(self.val[0],".3f"), alpha= self.alpha, suf = s, res = res, analysis=text.lstrip()))     
+                pval = format(self.val[1],".5f"), stat = format(self.val[0],".2f"), alpha= self.alpha, suf = s, res = res, analysis=text.lstrip()))     
         else:
             return self.val
 
@@ -212,7 +218,7 @@ class movie:
         mod_df = df.dropna( how='any', subset=[col_title_1, col_title_2])
         return np.array(mod_df[col_title_1]), np.array(mod_df[col_title_2])
 
-    def magic_prop_pval(self, xcol_title = 'Gender identity (1 = female; 2 = male; 3 = self-described)', options = [1, 2, 3], hyp = 'two-sided', text="that <what you try to test>", verbose=False):
+    def utest2_prop(self, xcol_title = 'Gender identity (1 = female; 2 = male; 3 = self-described)', options = [1, 2, 3], hyp = 'two-sided', text="that <what you try to test>", verbose=False):
         #TO-DO: Change this for a certain test (not only u-test)
         count = 0
         df = self.dataset
@@ -265,12 +271,16 @@ class movie:
 
        
             
+#=========================================================================================================================
+#=========================================================================================================================
 
 Movies = movie()
 #Some useful dictionaries
 movies_clean = Movies.table(dropNan=True, moviesOnly=True)
 movies_col = Movies.columnData(dropNan=True)
 
+#=========================================================================================================================
+#=========================================================================================================================
 
 # 1. Are movies that are more popular (operationalized as having more ratings) rated higher than movies that are less popular?
 movies_popularities = Movies.popularity()
@@ -298,8 +308,8 @@ sample_means_sleepers = []
 for movie in populars: sample_means_populars.append(np.mean(movie))
 for movie in sleepers: sample_means_sleepers.append(np.mean(movie))
 
-Movies.plot(sample_means_populars, sample_means_sleepers, "Q1", n_bins = 10, titleX = "sample_means_populars",titleY = "sample_means_sleepers", \
-    x1="Counts",y1="Counts",x2="Avg Rating",y2="Avg Rating")
+Movies.plot(sample_means_populars, sample_means_sleepers, "Q1", n_bins = 10, titleX = "Popular Movie Averages",titleY = "Unpopular Movie Averages", \
+    x1="Reviews",y1="Reviews",x2="Avg Rating",y2="Avg Rating")
 
 pval1 = Movies.ttest2(sample_means_populars,sample_means_sleepers, hyp = 'greater', text = "that movies that are more \
 popular have ratings that are higher than movies that are less popular.")
@@ -332,7 +342,7 @@ for i in range(len(movie_yrs)):
 
 if (len(newer)+len(older)!=400):error("DATA MISMATCH")
 
-Movies.plot(older, newer, "Q2", n_bins = 12, titleX = "sample_means_older",titleY = "sample_means_newer", \
+Movies.plot(older, newer, "Q2", n_bins = 12, titleX = "Older Movie Averages",titleY = "Newer Movie Averages", \
     x1="Counts",y1="Counts",x2="Avg Rating",y2="Avg Rating")
    
 pval2 = Movies.utest2(newer,older, hyp = 'two-sided', text = "that newer movies are rated differently than older films.")  
@@ -366,7 +376,7 @@ for i in range(len(genders)):
     else: error('GENDER MISMATCH')
 if count!=len(shrek_females)+len(shrek_males):error('POSSIBLE DATA MISMATCH')
 
-Movies.plot(shrek_males, shrek_females, "Q3", n_bins = 6, titleX = "sample_ratings_male",titleY = "sample_ratings_female", \
+Movies.plot(shrek_males, shrek_females, "Q3", n_bins = 6, titleX = "Male Ratings",titleY = "Female Ratings", \
     x1="Counts",y1="Counts",x2="Rating",y2="Rating")
 
 pval3 = Movies.utest2(shrek_males,shrek_females, hyp = 'two-sided', text = "that enjoyment of Shrek (2001) is gendered.")  
@@ -374,8 +384,9 @@ pval3 = Movies.utest2(shrek_males,shrek_females, hyp = 'two-sided', text = "that
 #=========================================================================================================================
 
 # 4. What proportion of movies are rated differently by male and female viewers? 
-prop4, pvals4 = Movies.magic_prop_pval(xcol_title = 'Gender identity (1 = female; 2 = male; 3 = self-described)', \
+prop4, pvals4 = Movies.utest2_prop(xcol_title = 'Gender identity (1 = female; 2 = male; 3 = self-described)', \
     options = [1, 2, 3], hyp = 'two-sided', text="show gendered preferences.")
+
 #=========================================================================================================================
 #=========================================================================================================================
 
@@ -396,7 +407,7 @@ for i in range(len(status)):
     #neglect the few who did not respond as there is not a guaranteed "50/50" chance someone has siblings 
 if count!=len(LK_single)+len(LK_multi):error('POSSIBLE DATA MISMATCH')
 
-Movies.plot(LK_single, LK_multi, "Q4", n_bins = 8, titleX = "LK_single_child",titleY = "LK_child_siblings", \
+Movies.plot(LK_single, LK_multi, "Q4", n_bins = 8, titleX = "Lion King (1994) with Single Children",titleY = "Lion King (1994) with Sibilings", \
     x1="Counts",y1="Counts",x2="Rating",y2="Rating")
 
 pval5 = Movies.utest2(LK_single, LK_multi, hyp = 'greater', text = "single children without siblings enjoy Lion King (1994) more.")  
@@ -404,9 +415,10 @@ pval5 = Movies.utest2(LK_single, LK_multi, hyp = 'greater', text = "single child
 #=========================================================================================================================
 
 #6. What proportion of movies exhibit an “only child effect”, i.e. are rated different by viewers with siblings  vs. those without?  
-pval6, pvals6 = Movies.magic_prop_pval(xcol_title = 'Are you an only child? (1: Yes; 0: No; -1: Did not respond)', \
+pval6, pvals6 = Movies.utest2_prop(xcol_title = 'Are you an only child? (1: Yes; 0: No; -1: Did not respond)', \
     options = [1, 0, 999], hyp = 'two-sided', text="are rated differently by viewers with siblings vs. those without.")
-    #Note: 999 signals to neglect the ones who did responde as we don't have a 50/50 chance one has siblings or not
+    #Note: 999 signals to neglect the ones who did responded as we don't have a 50/50 chance one has siblings or not
+
 #=========================================================================================================================
 #=========================================================================================================================
 
@@ -427,12 +439,12 @@ for i in range(len(status)):
 if count!=len(WW_alone)+len(WW_ppl):error('POSSIBLE DATA MISMATCH')
 pval7= Movies.utest2(WW_alone, WW_ppl, hyp = 'less', text = "people enjoy watching the The Wolf of Wall Street (2013) with others than alone.")  
 
-Movies.plot(WW_alone, WW_ppl, "Q7", n_bins = 8, titleX = "WW_alone",titleY = "WW_ppl", \
+Movies.plot(WW_alone, WW_ppl, "Q7", n_bins = 8, titleX = "W.W.S. (2013) - Viewed Alone",titleY = "W.W.S. (2013) - Viewed Together", \
     x1="Counts",y1="Counts",x2="Rating",y2="Rating")
 #=========================================================================================================================
 #=========================================================================================================================
 #8. What proportion of movies exhibit such a “social watching” effect? 
-prop8, pvals8 = Movies.magic_prop_pval(xcol_title = 'Movies are best enjoyed alone (1: Yes; 0: No; -1: Did not respond)', \
+prop8, pvals8 = Movies.utest2_prop(xcol_title = 'Movies are best enjoyed alone (1: Yes; 0: No; -1: Did not respond)', \
     options = [1, 0, 999], hyp = 'two-sided', text="show a social watching effect.")
 #=========================================================================================================================
 #=========================================================================================================================
@@ -451,13 +463,19 @@ pval9 = Movies.kstest2(ratings_HA,ratings_FN,text="that the two distributions ar
 #=========================================================================================================================
 
 # There are ratings on movies from several franchises ([‘Star Wars’, ‘Harry Potter’, ‘The Matrix’, ‘Indiana  Jones’, ‘Jurassic Park’,  ‘Pirates of the Caribbean’, ‘Toy Story’, ‘Batman’]) in this dataset. 
-# How many of these  are of inconsistent quality, as experienced by viewers? [Hint: You can use the keywords in quotation marks 
+# How many of these are of inconsistent quality, as experienced by viewers? [Hint: You can use the keywords in quotation marks 
 # featured in this question to identify the movies that are part of each franchise]  
 
 franchisesList = ['Star Wars', 'Harry Potter', 'The Matrix', 'Indiana Jones', 'Jurassic Park', 'Pirates of the Caribbean', 'Toy Story', 'Batman']
-discrepant10 = Movies.franchiseDiff(franchisesList, hyp = 'two-sided', text = "quality across its movie ratings.", alpha_ratio=2)
+discrepant10 = Movies.franchiseDiff(franchisesList, hyp = 'two-sided', text = "quality across its movie ratings.", alpha_ratio= 1)
 [print(res) for res in discrepant10]
 
 #=========================================================================================================================
 #=========================================================================================================================
-#Bonus something
+#Bonus: Tell us something interesting and true (supported by a significance test of some kind) about the 
+#movies in this dataset that is not already covered by the questions above [for 5% of the grade score].
+
+#anderson 2test to see how many of the movie ratings follow normal dist at 5%
+#anderson 1test to see how many movie ratings for males/fem follow exponential dist vs normal dist (repeat 1 sample twice)
+
+#TO DO - remove class from implementation + jupyter transfer
