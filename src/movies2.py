@@ -5,7 +5,7 @@ import pingouin as pg
 import pandas as pd
 import numpy as np
 
-Movies = movieClass.movie(verbose=True, alpha=0.005)
+Movies = movieClass.movie(verbose=False, alpha=0.005)
 
 usrData = pd.DataFrame(Movies.userData()).T
 names = ['User ' + str(i) for i in range(len(usrData.columns))]
@@ -40,4 +40,10 @@ print(string)
 
 Movies = movieClass.movie(verbose=False,alpha=0.005,fillAvg=False)
 data = Movies.columnData(fillAvg=False, dropNan = False)
-print(data)
+df_rate = pd.DataFrame(data[:Movies.movieCols])
+df_pers = pd.DataFrame(data[Movies.movieCols:])
+
+#https://stackoverflow.com/questions/38250710/how-to-split-data-into-3-sets-train-validation-and-test
+train_rate, test_rate = np.split(df_rate.sample(frac=1, random_state=42), [int(.8*len(df_rate))])
+train_pers, test_pers = np.split(df_pers.sample(frac=1, random_state=42), [int(.8*len(df_pers))])
+

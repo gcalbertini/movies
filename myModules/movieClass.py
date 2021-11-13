@@ -9,11 +9,11 @@ import re
 import itertools
 
 
-#Movie class -- future work: introduce sets (dict are unordered but structure here v ordered), debug, more clever algos
+#Movie class -- future work: need to fix 'error(...)' lines to break execution
 
 class movie:
 
-    def __init__(self, dataset="movieReplicationSet.csv", alpha = 0.05, verbose = True, movieCols = 400):
+    def __init__(self, dataset="data/movieReplicationSet.csv", alpha = 0.05, verbose = True, movieCols = 400, fillAvg = True):
         self.alpha = alpha
         self.movieCols = movieCols
 
@@ -22,7 +22,7 @@ class movie:
         except FileNotFoundError:
             error("File not found!")
 
-        self.movies= dict(itertools.islice(self.table(dropNan=True).items(), movieCols)) 
+        self.movies= dict(itertools.islice(self.table(fillAvg).items(), movieCols)) 
         self.verbose = True
         self.titles = list(self.dataset.columns)
 
@@ -69,7 +69,7 @@ class movie:
 
     #Note: "dropNan" will drop non-numeric values from the number values associated with each column from the spreadsheet,
     #thus will not do row-wise element elimination for blanks or NAN"
-    def columnData(self, dropNan = False):
+    def columnData(self, dropNan = False, fillAvg = False):
         self.df = self.dataset.values
         self.data = []
         for col in range(self.df.shape[1]):
@@ -79,19 +79,52 @@ class movie:
             self.data.append(vec)
         self.data = np.array(self.data) 
 
-        if dropNan == False:
-            return self.data
-        else: 
+        if dropNan == True and fillAvg ==True: error('Cannot both drop NAN and fill NAN values with column averages. Check default parameter settings.')
+
+        if dropNan == True:
             self.data_dropnan = []
             for entry in self.data: self.data_dropnan.append(entry[~np.isnan(entry)])
             return self.data_dropnan
+        elif dropNan == False and fillAvg == True:
+            self.data_avg = []
+            for entry in self.data: self.data_avg.append(np.nan_to_num(entry, nan=np.nanmean(entry), copy=False))
+            return self.data_avg
+        elif dropNan == False and fillAvg == False:
+            return self.data
 
-    def table(self, dropNan = False, moviesOnly = False):
+
+    def userData(self, moviesOnly = False):
+        # User data (row data) will fill in NAN entries with averages of the columns
+        self.df = self.columnData(fillAvg = True)
+        self.data = []
+
+        if not moviesOnly == True:
+            condition = len(self.df)
+        else:
+            condition = self.movieCols
+
+        for user in range(self.dataset.shape[0]):
+            userVec = []
+            for col in range(condition):
+                userVec.append(self.df[col][user])
+            self.data.append(userVec)
+
+        return np.array(self.data) 
+
+    def table(self, dropNan = False, fillAvg = False, moviesOnly = False):
         self.dict = {}
-        data = self.columnData(dropNan)
+        if dropNan == True and fillAvg == True: error('Cannot both drop NAN and fill NAN values with column averages. Check default parameter settings.')
+
+        if dropNan == True:
+            data = self.columnData(dropNan == True)
+        elif dropNan == False and fillAvg == False:
+            data = self.columnData()
+        elif dropNan == False and fillAvg == True: 
+            data = self.columnData(fillAvg == True)
+        
         self.titles = list(self.dataset.columns)
         d = 0
-        if not moviesOnly:
+        if moviesOnly == False:
             for title in self.titles:
                 self.dict.__setitem__(title, data[d]) 
                 d+=1
@@ -101,7 +134,6 @@ class movie:
                 self.dict.__setitem__(title, data[d]) 
                 d+=1
             return self.dict
-
 
     def popularity(self, colTitle = "All"):
         self.entry = colTitle
@@ -268,6 +300,3 @@ class movie:
         print("About {p}% of movies ({count}) {analysis}\n".format(p = format(100*self.prop,".2f"), analysis = text, count = int(self.prop*self.movieCols)))
         self.verbose = True #revert to default
         return self.prop, self.pvals
-
-       
-            
