@@ -4,6 +4,9 @@ importlib.reload(movieClass)
 import pingouin as pg
 import pandas as pd
 import numpy as np
+from sklearn import linear_model
+from sklearn.model_selection import train_test_split
+
 
 Movies = movieClass.movie(verbose=False, alpha=0.005)
 
@@ -38,12 +41,32 @@ for pair in pairs:
 string = "The most correlated pair of users is pair {pair} with coefficient of {coeff}.".format(pair=megaPair, coeff=megaMax)
 print(string)
 
-Movies = movieClass.movie(verbose=False,alpha=0.005,fillAvg=False)
-data = Movies.columnData(fillAvg=False, dropNan = False)
+#For missing entries, avg from the column used. Personal columns are from 401 to 474.
+Movies = movieClass.movie(verbose=False,alpha=0.005,fillAvg=True)
+data = Movies.columnData(fillAvg=True, dropNan = False)
 df_rate = pd.DataFrame(data[:Movies.movieCols])
-df_pers = pd.DataFrame(data[Movies.movieCols:])
+df_pers = pd.DataFrame(data[Movies.movieCols:-3])
 
-#https://stackoverflow.com/questions/38250710/how-to-split-data-into-3-sets-train-validation-and-test
-train_rate, test_rate = np.split(df_rate.sample(frac=1, random_state=42), [int(.8*len(df_rate))])
-train_pers, test_pers = np.split(df_pers.sample(frac=1, random_state=42), [int(.8*len(df_pers))])
+#80% for training set, 20% for test
+#df_pers = function(df_rate)
+x_train,x_test,y_train,y_test=train_test_split(df_rate.T,df_pers.T,test_size=0.2, random_state = 42)
 
+Y = y_train # dependent variables (really, y_hat + residuals, y = (B_0 * x_0 +...+ B_76 * x_76) + e for ALL users, so multiple yhats)
+X = x_train # independent variables (predictors, "betas")
+model = linear_model.LinearRegression().fit(X, Y) # fitting the model
+yhat = model.predict(x_test)
+yhat_odd = model.predict(X)
+
+
+def loss(pd_Y, np_Yhat):
+    y = pd_Y.values
+    diff = np.absolute(y-np_Yhat)
+    err = []
+    for d in diff:
+        e = np.average(d)
+        err.append(e)
+    return np.average(err)
+
+
+error_train_avg = loss(Y,yhat_odd)
+error_test_avg = loss(y_test,yhat)
