@@ -58,9 +58,11 @@ x_train,x_test,y_train,y_test=train_test_split(df_rate.T,df_pers.T,test_size=0.2
 
 # We're going to focus particularly on sensation-seeking behaviors (Columns 401-421) as they all query from a set of questions that lie on a risky/high energy-to-risk-averse spectrum 
 # and will be aggregated to form our dependent vector  
+
 Y_train = y_train.iloc[:,0:20].agg('sum',axis='columns')# dependent variables (really, y_hat + residuals, y = (B_0 * x_0 +...+ B_76 * x_76) + e for ALL users, so multiple OLS)
 Y_test = y_test.iloc[:,0:20].agg('sum',axis='columns')
 
+# OLS Model
 model = linear_model.LinearRegression().fit(x_train, Y_train)  # fitting the model
 #Predict function is model.intercept_ + np.dot(x_train, model.coef_)
 yhat_test = model.predict(x_test)
@@ -71,3 +73,14 @@ test_MAE = mean_absolute_error(Y_test.values, yhat_test)
 
 print(train_MAE)
 print(test_MAE)
+
+# Ridge Regression Version
+alphas = [0, 1e-8, 1e-5, .1, 1, 10]
+model_alpha = []
+for a in alphas:
+    model = linear_model.Ridge(alpha=a).fit(x_train, Y_train)
+    yhat_test = model.predict(x_test)
+    yhat_train = model.predict(x_train)
+    train_MAE = mean_absolute_error(Y_train.values, yhat_train) 
+    test_MAE = mean_absolute_error(Y_test.values, yhat_test)
+    model_alpha.append((train_MAE,test_MAE))
