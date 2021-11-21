@@ -1,11 +1,16 @@
 import importlib
+
+from pandas.core.frame import DataFrame
 from myModules import movieClass
 importlib.reload(movieClass)
 import pingouin as pg
 import pandas as pd
 import numpy as np
 from sklearn import linear_model
+from sklearn.metrics import mean_absolute_error
+import statsmodels.api as sm
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as  plt
 
 
 Movies = movieClass.movie(verbose=False, alpha=0.005)
@@ -41,32 +46,28 @@ for pair in pairs:
 string = "The most correlated pair of users is pair {pair} with coefficient of {coeff}.".format(pair=megaPair, coeff=megaMax)
 print(string)
 
-#For missing entries, avg from the column used. Personal columns are from 401 to 474.
+#For missing entries, avg from the column used. Personal columns are from 401 to 474. First 400 are movie ratings.
 Movies = movieClass.movie(verbose=False,alpha=0.005,fillAvg=True)
 data = Movies.columnData(fillAvg=True, dropNan = False)
 df_rate = pd.DataFrame(data[:Movies.movieCols])
 df_pers = pd.DataFrame(data[Movies.movieCols:-3])
 
 #80% for training set, 20% for test
-#df_pers = function(df_rate)
+#Model df_pers = function(df_rate)
 x_train,x_test,y_train,y_test=train_test_split(df_rate.T,df_pers.T,test_size=0.2, random_state = 42)
 
-Y = y_train # dependent variables (really, y_hat + residuals, y = (B_0 * x_0 +...+ B_76 * x_76) + e for ALL users, so multiple yhats)
-X = x_train # independent variables (predictors, "betas")
-model = linear_model.LinearRegression().fit(X, Y) # fitting the model
-yhat = model.predict(x_test)
-yhat_odd = model.predict(X)
+# We're going to focus particularly on sensation-seeking behaviors (Columns 401-421) as they all query from a set of questions that lie on a risky/high energy-to-risk-averse spectrum 
+# and will be aggregated to form our dependent vector  
+Y_train = y_train.iloc[:,0:20].agg('sum',axis='columns')# dependent variables (really, y_hat + residuals, y = (B_0 * x_0 +...+ B_76 * x_76) + e for ALL users, so multiple OLS)
+Y_test = y_test.iloc[:,0:20].agg('sum',axis='columns')
 
+model = linear_model.LinearRegression().fit(x_train, Y_train)  # fitting the model
+#Predict function is model.intercept_ + np.dot(x_train, model.coef_)
+yhat_test = model.predict(x_test)
+yhat_train = model.predict(x_train)
 
-def loss(pd_Y, np_Yhat):
-    y = pd_Y.values
-    diff = np.absolute(y-np_Yhat)
-    err = []
-    for d in diff:
-        e = np.average(d)
-        err.append(e)
-    return np.average(err)
+train_MAE = mean_absolute_error(Y_train.values, yhat_train) 
+test_MAE = mean_absolute_error(Y_test.values, yhat_test)
 
-
-error_train_avg = loss(Y,yhat_odd)
-error_test_avg = loss(y_test,yhat)
+print(train_MAE)
+print(test_MAE)
