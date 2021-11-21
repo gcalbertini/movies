@@ -76,11 +76,28 @@ print(test_MAE)
 
 # Ridge Regression Version
 alphas = [0, 1e-8, 1e-5, .1, 1, 10]
-model_alpha = []
+model_alphas = []
 for a in alphas:
     model = linear_model.Ridge(alpha=a).fit(x_train, Y_train)
     yhat_test = model.predict(x_test)
     yhat_train = model.predict(x_train)
     train_MAE = mean_absolute_error(Y_train.values, yhat_train) 
     test_MAE = mean_absolute_error(Y_test.values, yhat_test)
-    model_alpha.append((train_MAE,test_MAE))
+    model_alphas.append((train_MAE,test_MAE))
+
+prime_alpha_ridge = alphas[model_alphas.index(min(model_alphas, key = lambda t: t[1]))]
+print(prime_alpha_ridge)
+
+#Lasso Regression Version
+alphas = [1e-3,1e-2,1e-1,1]
+model_alphas = []
+for a in alphas:
+    model = linear_model.Lasso(alpha=a, max_iter=10000).fit(x_train, Y_train)
+    yhat_test = model.predict(x_test)
+    yhat_train = model.predict(x_train)
+    train_MAE = mean_absolute_error(Y_train.values, yhat_train) 
+    test_MAE = mean_absolute_error(Y_test.values, yhat_test)
+    model_alphas.append((train_MAE,test_MAE))
+
+prime_alpha_lasso = alphas[model_alphas.index(min(model_alphas, key = lambda t: t[1]))]
+print(prime_alpha_lasso)
