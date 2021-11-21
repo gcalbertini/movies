@@ -1,6 +1,6 @@
-import importlib
+#!/usr/bin/env python
 
-from pandas.core.frame import DataFrame
+import importlib
 from myModules import movieClass
 importlib.reload(movieClass)
 import pingouin as pg
