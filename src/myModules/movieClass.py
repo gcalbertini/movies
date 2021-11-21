@@ -300,3 +300,6 @@ class movie:
         print("About {p}% of movies ({count}) {analysis}\n".format(p = format(100*self.prop,".2f"), analysis = text, count = int(self.prop*self.movieCols)))
         self.verbose = True #revert to default
         return self.prop, self.pvals
+
+       
+            
