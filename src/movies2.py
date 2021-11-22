@@ -3,14 +3,13 @@
 import importlib
 from myModules import movieClass
 importlib.reload(movieClass)
-import pingouin as pg
 import pandas as pd
 import numpy as np
 from sklearn import linear_model
 from sklearn.metrics import mean_absolute_error
-import statsmodels.api as sm
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as  plt
+from labellines import labelLine, labelLines
 
 
 Movies = movieClass.movie(verbose=False, alpha=0.005)
@@ -68,36 +67,111 @@ model = linear_model.LinearRegression().fit(x_train, Y_train)  # fitting the mod
 yhat_test = model.predict(x_test)
 yhat_train = model.predict(x_train)
 
-train_MAE = mean_absolute_error(Y_train.values, yhat_train) 
-test_MAE = mean_absolute_error(Y_test.values, yhat_test)
+train_MAE_OLS = mean_absolute_error(Y_train.values, yhat_train) 
+test_MAE_OLS = mean_absolute_error(Y_test.values, yhat_test)
 
-print(train_MAE)
-print(test_MAE)
+print(train_MAE_OLS)
+print(test_MAE_OLS)
 
 # Ridge Regression Version
-alphas = [0, 1e-8, 1e-5, .1, 1, 10]
-model_alphas = []
-for a in alphas:
+alphas_RR = [0, 1e-8, 1e-5, .1, 1, 10]
+model_alphas_RR = []
+for a in alphas_RR:
     model = linear_model.Ridge(alpha=a).fit(x_train, Y_train)
     yhat_test = model.predict(x_test)
     yhat_train = model.predict(x_train)
-    train_MAE = mean_absolute_error(Y_train.values, yhat_train) 
-    test_MAE = mean_absolute_error(Y_test.values, yhat_test)
-    model_alphas.append((train_MAE,test_MAE))
+    train_MAE_RR = mean_absolute_error(Y_train.values, yhat_train) 
+    test_MAE_RR = mean_absolute_error(Y_test.values, yhat_test)
+    model_alphas_RR.append((train_MAE_RR,test_MAE_RR))
 
-prime_alpha_ridge = alphas[model_alphas.index(min(model_alphas, key = lambda t: t[1]))]
+prime_alpha_ridge = alphas_RR[model_alphas_RR.index(min(model_alphas_RR, key = lambda t: t[1]))]
 print(prime_alpha_ridge)
 
 #Lasso Regression Version
-alphas = [1e-3,1e-2,1e-1,1]
-model_alphas = []
-for a in alphas:
+alphas_LSO = [1e-3,1e-2,1e-1,1]
+log_lasso = []
+model_alphas_LSO = []
+for a in alphas_LSO:
     model = linear_model.Lasso(alpha=a, max_iter=10000).fit(x_train, Y_train)
+    log_lasso.append(model)
     yhat_test = model.predict(x_test)
     yhat_train = model.predict(x_train)
-    train_MAE = mean_absolute_error(Y_train.values, yhat_train) 
-    test_MAE = mean_absolute_error(Y_test.values, yhat_test)
-    model_alphas.append((train_MAE,test_MAE))
+    train_MAE_LSO = mean_absolute_error(Y_train.values, yhat_train) 
+    test_MAE_LSO = mean_absolute_error(Y_test.values, yhat_test)
+    model_alphas_LSO.append((train_MAE_LSO,test_MAE_LSO))
 
-prime_alpha_lasso = alphas[model_alphas.index(min(model_alphas, key = lambda t: t[1]))]
+prime_alpha_lasso = alphas_LSO[model_alphas_LSO.index(min(model_alphas_LSO, key = lambda t: t[1]))]
 print(prime_alpha_lasso)
+
+plt.rcParams["figure.figsize"] = [20.00, 8.50]
+plt.rcParams["figure.autolayout"] = True
+labels = ['OLS', 'RR (alpha  0)', 'RR (alpha 1e-8)', 'RR (alpha 1e-5)', 'RR (alpha 0.1)', 'RR (alpha 1)', 'RR (alpha 10)',
+'LSO (alpha 1e-3)', 'LSO (alpha 1e-2)', 'LSO (alpha 1e-1)', 'LSO (alpha 1)']
+mae_train = [train_MAE_OLS, model_alphas_RR[0][0], model_alphas_RR[1][0], model_alphas_RR[2][0], model_alphas_RR[3][0], model_alphas_RR[4][0],
+model_alphas_RR[5][0],model_alphas_LSO[0][0], model_alphas_LSO[1][0], model_alphas_LSO[2][0], model_alphas_LSO[3][0]]
+mae_train = [round(i,3) for i in mae_train]
+
+mae_test = [test_MAE_OLS, model_alphas_RR[0][1], model_alphas_RR[1][1], model_alphas_RR[2][1], model_alphas_RR[3][1], model_alphas_RR[4][1],
+model_alphas_RR[5][1], model_alphas_LSO[0][1], model_alphas_LSO[1][1], model_alphas_LSO[2][1], model_alphas_LSO[3][1]]
+mae_test = [round(i,3) for i in mae_test]
+
+x = np.arange(len(labels))
+width = 0.25
+fig, ax = plt.subplots()
+rects1 = ax.bar(x - width / 2, mae_train, width, label='Train MAE')
+rects2 = ax.bar(x + width / 2, mae_test, width, label='Test MAE')
+
+ax.set_ylabel('MAE')
+ax.set_title('Mean Absolute Error (MAE) for Training and Test Data')
+ax.set_xticks(x)
+ax.set_xticklabels(labels)
+ax.legend()
+
+def autolabel(rects):
+   for rect in rects:
+      height = rect.get_height()
+      ax.annotate('{}'.format(height),
+         xy=(rect.get_x() + rect.get_width() / 2, height),
+         xytext=(0, 3), # 3 points vertical offset
+         textcoords="offset points",
+         ha='center', va='bottom')
+
+autolabel(rects1)
+autolabel(rects2)
+plt.show()
+
+
+baseline = linear_model.LinearRegression().fit(x_train, Y_train)
+prime_model = log_lasso[-2]
+labels = ['Beta ' + str(i+1) for i in range(len(prime_model.coef_)-380)]
+for i in range(len(prime_model.coef_)-380):
+    x1 = 0
+    y1 = baseline.coef_[i]
+
+    x2 = alphas_LSO[0]
+    y2 = log_lasso[0].coef_[i]
+
+    x3 = alphas_LSO[1]
+    y3 = log_lasso[1].coef_[i]
+
+    x4 = alphas_LSO[2]
+    y4 = log_lasso[2].coef_[i]
+
+    x_val = [x1,x2,x3,x4]
+    y_val = [y1,y2,y3,y4]
+
+    plt.plot(x_val,y_val, label=labels[i])
+    
+#specify x-axis locations
+x_ticks = x_val
+#specify x-axis labels (lambdas)
+x_labels = ['OLS (0)', 'Lasso (1e-3) ', 'Lasso (1e-2)', 'Lasso (1e-1)'] 
+#add x-axis values to plot
+plt.xticks(ticks=x_ticks, labels=x_labels, rotation=45)
+
+for tick in plt.xticks()[0]: plt.axvline(tick, color='red', linestyle='-', linewidth=1, alpha=.5)
+labelLines(plt.gca().get_lines(), zorder=2.5)
+plt.ylabel('Coefficient')
+plt.xlabel('Penalty (Hyperparamater)')
+plt.title('Coefficient Value from Baseline to Lasso for First 20 Predictors')
+plt.show()
