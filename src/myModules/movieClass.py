@@ -15,7 +15,13 @@ class movie:
 
     def __init__(self, dataset="data/movieReplicationSet.csv", alpha = 0.05, verbose = True, movieCols = 400, fillAvg = True):
         self.alpha = alpha
-        self.dataset = pd.read_csv(dataset)
+        self.movieCols = movieCols
+
+        try: 
+            self.dataset = pd.read_csv(dataset)
+        except FileNotFoundError:
+            error("File not found!")
+
         self.movies= dict(itertools.islice(self.table(fillAvg).items(), movieCols)) 
         self.verbose = True
         self.titles = list(self.dataset.columns)

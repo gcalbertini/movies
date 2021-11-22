@@ -9,7 +9,8 @@ from sklearn import linear_model
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as  plt
-from labellines import labelLines
+from labellines import labelLine, labelLines
+
 
 Movies = movieClass.movie(verbose=False, alpha=0.005)
 
@@ -142,45 +143,35 @@ plt.show()
 
 baseline = linear_model.LinearRegression().fit(x_train, Y_train)
 prime_model = log_lasso[-2]
-labels = ['Beta ' + str(i+1) for i in range(len(prime_model.coef_)-370)]
-for i in range(len(prime_model.coef_)-370):
+labels = ['Beta ' + str(i+1) for i in range(len(prime_model.coef_)-380)]
+for i in range(len(prime_model.coef_)-380):
     x1 = 0
     y1 = baseline.coef_[i]
 
-    x2 = 1
+    x2 = alphas_LSO[0]
     y2 = log_lasso[0].coef_[i]
 
-    x3 = 2
+    x3 = alphas_LSO[1]
     y3 = log_lasso[1].coef_[i]
 
-    x4 = 3
+    x4 = alphas_LSO[2]
     y4 = log_lasso[2].coef_[i]
 
-    x5 = 4
-    y5 = log_lasso[3].coef_[i]
-
-    x_val = [x1,x2,x3,x4,x5]
-    y_val = [y1,y2,y3,y4,y5]
+    x_val = [x1,x2,x3,x4]
+    y_val = [y1,y2,y3,y4]
 
     plt.plot(x_val,y_val, label=labels[i])
-
+    
 #specify x-axis locations
 x_ticks = x_val
 #specify x-axis labels (lambdas)
-x_labels = ['OLS (0)', 'Lasso (1e-3) ', 'Lasso (1e-2)', 'Target Lasso (1e-1)', 'Lasso (1)'] 
-
+x_labels = ['OLS (0)', 'Lasso (1e-3) ', 'Lasso (1e-2)', 'Lasso (1e-1)'] 
 #add x-axis values to plot
 plt.xticks(ticks=x_ticks, labels=x_labels, rotation=45)
 
-for tick in plt.xticks()[0]: 
-    if tick == 3:
-        plt.axvline(tick, color='red', linestyle='-', linewidth=2, alpha=.5)
-    else:
-        plt.axvline(tick, color='blue', linestyle='-', linewidth=2, alpha=.5)
-
-
+for tick in plt.xticks()[0]: plt.axvline(tick, color='red', linestyle='-', linewidth=1, alpha=.5)
 labelLines(plt.gca().get_lines(), zorder=2.5)
 plt.ylabel('Coefficient')
-plt.xlabel('Model (Hyperparamater)')
-plt.title('Predictors from OLS through Lasso Models (First 30 Shown)')
+plt.xlabel('Penalty (Hyperparamater)')
+plt.title('Coefficient Value from Baseline to Lasso for First 20 Predictors')
 plt.show()
