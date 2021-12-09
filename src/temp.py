@@ -3,8 +3,11 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import numpy as np
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 from scipy import stats
+from sklearn.cluster import KMeans
+from yellowbrick.cluster import SilhouetteVisualizer
+ 
 
 Movies = movieClass.movie(verbose=True, alpha=0.005)
 usrData = pd.DataFrame(Movies.userData()).T
@@ -53,9 +56,8 @@ numClasses = data.shape[1]
 plt.bar(np.linspace(1,numClasses,numClasses),eigVals)
 plt.xlabel('Principal component')
 plt.ylabel('Eigenvalue')
-plt.plot([0,numClasses],[1,1],color='red',linewidth=1) # Kaiser criterion line; 11 factors considered
+plt.plot([0,numClasses],[1,1],color='red',linewidth=1) # Kaiser criterion line; 12 factors considered (12th has eigVal 0.98 and is also considered)
 plt.show()
-
 
 # Using Kaiser criterion: Keep all factors with an eigenvalue > 1
 # Rationale: Each variable adds 1 to the sum of eigenvalues. The eigensum. 
@@ -69,29 +71,58 @@ plt.show()
 # You do this - in principle - by looking at the loadings - in which
 # direction does the factor point? 
 
-whichPrincipalComponent = 1 # Try a few possibilities (at least 1,2,3 - or 0,1,2 that is - indexing from 0)
+fig, axs = plt.subplots(6, 2, figsize=(15,10),sharey=True)
+x = np.linspace(1,data.shape[1],data.shape[1])
+pc = 0
+for row in range(6):
+    for col in range(2):
+        y = np.abs(loadings[pc,:])
+        axs[row, col].bar(x, y)
+        title = 'PC' + str(pc+1) + ': ' + str(factors[np.argmax(np.abs(loadings[pc]))])
+        axs[row, col].set_title(title[0:95], fontdict = {'fontsize': 8}, pad = 2.0)
+        pc+=1
 
-# 1: The first one accounts for almost everything, so it will probably point 
-# in all directions at once
-# 2: Challenging/informative - how much information?
-# 3: Organization/clarity: Pointing to 6 and 5, and away from 16 - structure?
+plt.subplots_adjust(left=0.125,
+                    bottom=0.1, 
+                    right=0.9, 
+                    top=0.9, 
+                    wspace=0.05, 
+                    hspace=0.5)
+plt.show()
 
-plt.bar(np.linspace(1,17,17),loadings[whichPrincipalComponent,:]*-1)
-plt.xlabel('Question')
-plt.ylabel('Loading')
-
-# General principle: Looking at the highest loadings (positive or negative)
-# and looking for commonalities.
+#Now using the 12 components
+pca = PCA(n_components=12).fit(zscoredData)
+rotatedData = pca.fit_transform(zscoredData)
 
 
-# For instance, let's say the school wants to figure out which courses are
-# good or needlessly hard, we can now look at that
+#Plots??
+#plt.plot(rotatedData[:,0]*-1,rotatedData[:,1]*-1,'o',markersize=5)
+#plt.xlabel('Is full of energy')
+#plt.ylabel('Emotions rub off on me')
+#plt.show()
 
-plt.plot(rotatedData[:,0]*-1,rotatedData[:,1]*-1,'o',markersize=5)
-plt.xlabel('Overall course quality')
-plt.ylabel('Hardness of course')
+n_clusters=25
+cost=[]
+for i in range(1,n_clusters):
+    kmean= KMeans(i)
+    kmean.fit(rotatedData)
+    cost.append(kmean.inertia_)  
+plt.ylabel('Within Cluster Sum of Squares')
+plt.xlabel('Number of Clusters')
+plt.title('KMeans with PCA Clustering')
+plt.plot(cost, 'bx-')
+plt.show()
 
-# In this sense, PCA can help in decision making - are there some classes
-# that are under/over-performing, given their characteristics?
-# If we had more than 40 courses, looking at the 3rd dimension would be
-# interesting too. As is, it is a bit sparse.
+# see: https://vitalflux.com/kmeans-silhouette-score-explained-with-python-example/
+fig, ax = plt.subplots(2, 2, figsize=(15,8), sharex=True, sharey=True)
+for i in [2, 3, 4, 5]:
+    km = KMeans(n_clusters=i, init='k-means++', n_init=10, max_iter=400, random_state=42)
+    q, mod = divmod(i, 2)
+    visualizer = SilhouetteVisualizer(km, colors='yellowbrick', ax=ax[q-1][mod])
+    visualizer.fit(rotatedData)  
+plt.show()
+
+# We select only 2 clusters as we see uniform thickness and few possible misclassifications (due to negative scores)
+
+kmeans_pca = KMeans(n_clusters=2, init = 'k-means++', random_state=42)
+kmeans_pca.fit(rotatedData)
