@@ -1,7 +1,5 @@
-from pandas.core.groupby.generic import SeriesGroupBy
 from myModules import movieClass
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import numpy as np
 import matplotlib.pyplot as plt
