@@ -1,5 +1,6 @@
 from myModules import movieClass
 import pandas as pd
+
 from sklearn.decomposition import PCA
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,7 +9,6 @@ from sklearn.cluster import KMeans
 from yellowbrick.cluster import SilhouetteVisualizer
 import seaborn as sns
 sns.set(style="darkgrid")
-
 
 Movies = movieClass.movie(verbose=True, alpha=0.005)
 usrData = pd.DataFrame(Movies.userData()).T
@@ -36,9 +36,11 @@ loadings = pca.components_
 rotatedData = pca.fit_transform(zscoredData)
 
 # 4. For the purposes of this, you can think of eigenvalues in terms of
+
 # (co)variance explained:
 covarExplained = eigVals/sum(eigVals)*100
 # We note that there about 11/54 factors that explain most of the data in terms of covariance
+
 
 fig1 = plt.figure()
 numClasses = data.shape[1]
@@ -55,10 +57,12 @@ plt.show()
 # to be explained. The factors have to carry their weight.
 # By this criterion, we would report 10 meaningful factors.
 
+
 # Now that we realize that 1, 2 or 3 are reasonable solutions to the course
 # evaluation issue, we have to interpret the factors.
 # This is perhaps where researchers have the most leeway.
 # You do this - in principle - by looking at the loadings - in which
+
 # direction does the factor point?
 
 fig2, axs = plt.subplots(6, 2, figsize=(15, 10), sharey=True)
@@ -154,3 +158,4 @@ ax.scatter(x_axis2, y_axis2, z_axis2, marker='o', color='b')
 plt.legend(labels=['Segment 1', 'Segment 2'])
 
 plt.show()
+
