@@ -18,8 +18,7 @@ prefer to watch them alone?
   9) Is the ratings distribution of ‘Home Alone (1990)’ different than that of ‘Finding Nemo (2003)’?
   10) There are ratings on movies from several franchises ([‘Star Wars’, ‘Harry Potter’, ‘The Matrix’, ‘Indiana
 Jones’, ‘Jurassic Park’, ‘Pirates of the Caribbean’, ‘Toy Story’, ‘Batman’]) in this dataset. How many of these
-are of inconsistent quality, as experienced by viewers? [Hint: You can use the keywords in quotation marks
-featured in this question to identify the movies that are part of each franchise]
+are of inconsistent quality, as experienced by viewers? 
 
 ### Results are found __[here](https://github.com/gcalbertini/movies/blob/9bdc85d0b7215a8d74749e07631c31de902f0023/project1.ipynb)__. The data can be found __[here](https://github.com/gcalbertini/movies/blob/9bdc85d0b7215a8d74749e07631c31de902f0023/data/movieReplicationSet.csv)__.
 ---
@@ -53,19 +52,9 @@ Our main task is to model:
 
 2.1. Model `df_pers = function(df_rate)` by using the linear regression. What are the errors on: (i) the training part; (ii) the testing part?
 
+2.2. Model `df_pers = function(df_rate)` by using the ridge regression with hyperparamter values alpha from [0.0, 1e-8, 1e-5, 0.1, 1, 10]. For every of the previous values for alpha, what are the errors on: (i) the training part; (ii) the testing part? What is a best choice for alpha?
 
-2.2. Model `df_pers = function(df_rate)` by using the ridge regression with hyperparamter values alpha from [0.0, 1e-8, 1e-5, 0.1, 1, 10]. 
-
-For every of the previous values for alpha, what are the errors on: (i) the training part; (ii) the testing part?
-
-What is a best choice for alpha?
-
-
-2.3. Model `df_pers = function(df_rate)` by using the lasso regression with hyperparamter values alpha from [1e-3, 1e-2, 1e-1, 1]. 
-
-For every of the previous values for alpha, what are the errors on: (i) the training part; (ii) the testing part?
-
-What is a best choice for alpha?
+2.3. Model `df_pers = function(df_rate)` by using the lasso regression with hyperparamter values alpha from [1e-3, 1e-2, 1e-1, 1]. For every of the previous values for alpha, what are the errors on: (i) the training part; (ii) the testing part? What is a best choice for alpha?
 
 ### Results are found __[here](https://github.com/gcalbertini/movies/blob/9bdc85d0b7215a8d74749e07631c31de902f0023/project2.ipynb)__. The data can be found __[here](https://github.com/gcalbertini/movies/blob/9bdc85d0b7215a8d74749e07631c31de902f0023/data/movieReplicationSet.csv)__.
 
@@ -81,16 +70,21 @@ experience movies, respectively.
   - Determine the number of factors (principal components) that we will interpret meaningfully (by
 the Kaiser criterion).
   - Semantically interpret what those factors represent. Explicitly name the factors found.
+ 
 3.2. Plot the data from columns 421-474 in the new coordinate system, where each dot represents a
-person, and the axes represent the factors you found in 3.1. 
+person, and the axes represent the factors found in 3.1. 
+
 3.3. Identify clusters in this new space. Use an ML method (e.g. kMeans, DBScan, hierarchical
 clustering) to do so. Determine the optimal number of clusters and identify which cluster a given user
 is part of.
+
 3.4. Use these principal components and/or clusters identified to build a classification model
 (e.g. logistic regression, kNN, SVM, random forest), where we predict the movie ratings of all
-movies from the personality factors identified before. Make sure to use cross-validation methods to
-avoid overfitting and assess the accuracy of your model by stating its AUC.
-3.5. Create a neural network model of your choice to predict movie ratings, using information from all 477
+movies from the personality factors identified before. 
+  - Make sure to use cross-validation methods to avoid overfitting. 
+  - Assess the accuracy of model by stating its AUC.
+
+3.5. Create a neural network model to predict movie ratings, using information from all 477
 columns. Make sure to comment on the accuracy of this model.
 
 ### Results are found __[here](https://github.com/gcalbertini/movies/blob/9bdc85d0b7215a8d74749e07631c31de902f0023/project3.ipynb)__. The data can be found __[here](https://github.com/gcalbertini/movies/blob/9bdc85d0b7215a8d74749e07631c31de902f0023/data/movieReplicationSet.csv)__.
